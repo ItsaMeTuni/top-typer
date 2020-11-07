@@ -36,9 +36,9 @@ reset();
 
 function onKeypress(e: KeyboardEvent)
 {
-    if(ended)
+    if(e.key === 'Enter' || ended)
     {
-        if(e.key === 'Enter')
+        if(e.key === 'Enter' && ended)
         {
             reset();
         }
@@ -192,10 +192,15 @@ function updateStatLabels()
         wpm = calcWpm(wordStats, currWordIndex);
         accuracy = calcAccuracy(wordStats, currWordIndex);
 
-        if(lastStat !== null)
+        if(lastStat !== null && started)
         {
             wpmRelativeDiff = wpm / cachedLastStatWpm;
             accuracyRelativeDiff = accuracy / cachedLastStatAccuracy;
+        }
+        else
+        {
+            wpmRelativeDiff = 1;
+            accuracyRelativeDiff = 1;
         }
     }
 }
@@ -240,6 +245,11 @@ function reset()
     lastStat = statHistory[statHistory.length - 1];
     cachedLastStatWpm = calcWpm(lastStat.words);
     cachedLastStatAccuracy = calcAccuracy(lastStat.words);
+
+    wpm = 0;
+    accuracy = 0;
+    wpmRelativeDiff = 1;
+    accuracyRelativeDiff = 1;
 }
 
 setInterval(wordTick, wordTickInterval);
@@ -276,12 +286,22 @@ setInterval(updateStatLabels, wpmUpdateInterval);
             <div class="stat">
                 <div class="title">Speed</div>
                 <div class="value">{wpm}WPM</div>
-                <div class="relative-diff positive">{wpmRelativeDiff >= 1 ? '+' : ''}{Math.floor(wpmRelativeDiff * 100) - 100}%</div>
+                <div
+                    class="relative-diff"
+                    class:positive={wpmRelativeDiff > 1}
+                >
+                    {wpmRelativeDiff >= 1 ? '+' : ''}{Math.floor(wpmRelativeDiff * 100) - 100}%
+                </div>
             </div>
             <div class="stat">
                 <div class="title">Accuracy</div>
                 <div class="value">{Math.floor(accuracy * 100)}%</div>
-                <div class="relative-diff negative">{accuracyRelativeDiff >= 1 ? '+' : ''}{Math.floor(accuracyRelativeDiff * 100) - 100}%</div>
+                <div
+                    class="relative-diff"
+                    class:positive={accuracyRelativeDiff > 1}
+                >
+                    {accuracyRelativeDiff >= 1 ? '+' : ''}{Math.floor(accuracyRelativeDiff * 100) - 100}%
+                </div>
             </div>
         </div>
 
@@ -441,15 +461,11 @@ setInterval(updateStatLabels, wpmUpdateInterval);
     .relative-diff
     {
         margin-left: 12px;
+        color: #40A7F2;
 
         &.positive
         {
             color: #50DB1F;
-        }
-
-        &.negative
-        {
-            color: #40A7F2;
         }
     }
 }
