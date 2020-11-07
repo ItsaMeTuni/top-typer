@@ -1,4 +1,7 @@
-<script lang="ts">
+<script lang="typescript">
+import { calcAccuracy, calcWpm, getStats, saveStat, Stat, WordStat } from "../statManager";
+
+
 
 interface TextPart
 {
@@ -6,30 +9,39 @@ interface TextPart
     type: 'normal' | 'error' | 'preview';
 }
 
-const text = 'Occaecat incididunt aliquip nostrud pariatur magna anim. Enim Lorem consequat ullamco aliqua irure id irure pariatur dolore. Velit commodo consequat sit ex enim ut adipisicing dolore.';
+const text = 'Occaecat incididunt aliquip nostrud pariatur magna anim.';
 
-let parts: TextPart[] = [
-    {
-        text: text,
-        type: 'preview',
-    }
-];
-
+let parts: TextPart[] = [];
 let started = false;
 let ended = false;
 let currWordIndex = 0;
-let wordTimings: number[] = text.split(' ').map(_ => 0);
+// Index of the current character relative to the start
+// of the current word
+let currCharIndexRelative = 0;
+let wordStats: WordStat[] = [];
+let lastStat: Stat | null;
+let cachedLastStatWpm: number = 0
+let cachedLastStatAccuracy: number = 0
+
 const wordTickInterval = 50;
 const wpmUpdateInterval = 250;
 let capsLockActivated = false;
 
 let wpm = 0;
+let wpmRelativeDiff = 0;
+let accuracy = 0;
+let accuracyRelativeDiff = 0;
 
+reset();
 
 function onKeypress(e: KeyboardEvent)
 {
-    if(e.key === 'Enter')
+    if(ended)
     {
+        if(e.key === 'Enter')
+        {
+            reset();
+        }
         return;
     }
 
@@ -59,6 +71,17 @@ function onKeypress(e: KeyboardEvent)
     if(char === ' ')
     {
         nextWord();
+    }
+    else
+    {
+        currCharIndexRelative += 1;
+    }
+
+    if(partType === 'error')
+    {
+        // Register a typo in the WordStat of the current word
+        const currWordStat = wordStats[currWordIndex];
+        currWordStat.typos.push(currCharIndexRelative);
     }
 
     // If the user missed a space replace it with an underscore
@@ -93,7 +116,10 @@ function onKeypress(e: KeyboardEvent)
         ];
     }
 
-    ended = previewPart.text.length === 0;
+    if(previewPart.text.length === 0)
+    {
+        end();
+    }
 }
 
 function onKeydown(e: KeyboardEvent)
@@ -142,7 +168,8 @@ function onKeydown(e: KeyboardEvent)
 function nextWord()
 {
     currWordIndex += 1;
-    wordTimings[currWordIndex] = 0;
+    currCharIndexRelative = 0;
+    wordStats[currWordIndex].duration = 0;
 }
 
 function prevWord()
@@ -154,22 +181,69 @@ function wordTick()
 {
     if(started)
     {
-        wordTimings[currWordIndex] += wordTickInterval;
+        wordStats[currWordIndex].duration += wordTickInterval;
     }
 }
 
-function calcWpm()
+function updateStatLabels()
 {
     if(started && !ended)
     {
-        const typedWordTimings = wordTimings.slice(0, currWordIndex + 1);
-        const avgSecsPerWord = typedWordTimings.slice(0, currWordIndex + 1).reduce((acc, x) => acc + x, 0) / 1000 / typedWordTimings.length;   
-        wpm = Math.floor(60 / avgSecsPerWord);
+        wpm = calcWpm(wordStats, currWordIndex);
+        accuracy = calcAccuracy(wordStats, currWordIndex);
+
+        if(lastStat !== null)
+        {
+            wpmRelativeDiff = wpm / cachedLastStatWpm;
+            accuracyRelativeDiff = accuracy / cachedLastStatAccuracy;
+        }
     }
 }
 
+function end()
+{
+    if(ended)
+    {
+        return;
+    }
+
+
+    ended = true;
+
+    console.log(wordStats);
+
+    const stat = new Stat();
+
+    stat.timestamp = Date.now();
+    stat.words = wordStats;
+
+    saveStat(stat);
+}
+
+function reset()
+{
+    parts = [
+        {
+            text: text,
+            type: 'preview',
+        }
+    ];
+
+    started = false;
+    ended = false;
+    currWordIndex = 0;
+    currCharIndexRelative = 0;
+    wordStats = WordStat.fromText(text);
+
+    const statHistory = getStats();
+
+    lastStat = statHistory[statHistory.length - 1];
+    cachedLastStatWpm = calcWpm(lastStat.words);
+    cachedLastStatAccuracy = calcAccuracy(lastStat.words);
+}
+
 setInterval(wordTick, wordTickInterval);
-setInterval(calcWpm, wpmUpdateInterval);
+setInterval(updateStatLabels, wpmUpdateInterval);
 
 </script>
 
@@ -202,12 +276,12 @@ setInterval(calcWpm, wpmUpdateInterval);
             <div class="stat">
                 <div class="title">Speed</div>
                 <div class="value">{wpm}WPM</div>
-                <div class="relative-diff positive">+3%</div>
+                <div class="relative-diff positive">{wpmRelativeDiff >= 1 ? '+' : ''}{Math.floor(wpmRelativeDiff * 100) - 100}%</div>
             </div>
             <div class="stat">
                 <div class="title">Accuracy</div>
-                <div class="value">89%</div>
-                <div class="relative-diff negative">-6%</div>
+                <div class="value">{Math.floor(accuracy * 100)}%</div>
+                <div class="relative-diff negative">{accuracyRelativeDiff >= 1 ? '+' : ''}{Math.floor(accuracyRelativeDiff * 100) - 100}%</div>
             </div>
         </div>
 
