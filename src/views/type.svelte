@@ -19,21 +19,25 @@ let wordTimings: number[] = [];
 
 let wordsPerMinute: number = 0;
 $: {
-    const wordDurations = wordTimings.map(x => (x - startTimestamp) / 1000);
-    wordsPerMinute = wordDurations.reduce((acc, x) => acc + x, 0) / wordDurations.length * 60;
+    const wordDurations = wordTimings.map(x => x / 1000);
+    wordsPerMinute = 60 / (wordDurations.reduce((acc, x) => acc + x, 0) / wordDurations.length);
+    wordsPerMinute = Math.floor(wordsPerMinute);
 }
 
-let startTimestamp = 0;
+let lastWordTimestamp = 0;
 
 // Index of the word the user is currently typing
 let currWord = 0;
 
+let capsLockActivated = true;
 
 function onKeypress(e: KeyboardEvent)
 {
-    if(startTimestamp === 0)
+    capsLockActivated = e.key.toLowerCase() !== e.key && !e.shiftKey;
+
+    if(lastWordTimestamp === 0)
     {
-        startTimestamp = Date.now();
+        lastWordTimestamp = Date.now();
     }
 
     const previewPart = parts[parts.length - 1];
@@ -60,7 +64,8 @@ function onKeypress(e: KeyboardEvent)
         const words = lastConcretePart.text.split(' ');
         const word = words[words.length - 1];
 
-        wordTimings[currWord] = Date.now();
+        wordTimings[currWord] = Date.now() - lastWordTimestamp;
+        lastWordTimestamp = Date.now();
 
         currWord += 1;
     }
@@ -150,16 +155,25 @@ function onKeydown(e: KeyboardEvent)
             <div>Top Typer</div>
             <div>Type faster, much faster</div>
         </div>
-        <div
-            class="text"
-            tabindex="0"
-            on:keypress={onKeypress}
-            on:keydown={onKeydown}
-        >
-            {#each parts as part}
-                <span class={part.type}>{part.text}</span>
-            {/each}
+
+        <div class="main">
+            <div class="messages">
+                {#if capsLockActivated}
+                    <div class="warn">Caps Lock activated</div>
+                {/if}
+            </div>
+            <div
+                class="text"
+                tabindex="0"
+                on:keypress={onKeypress}
+                on:keydown={onKeydown}
+            >
+                {#each parts as part}
+                    <span class={part.type}>{part.text}</span>
+                {/each}
+            </div>
         </div>
+
         <div class="stats">
             <div class="stat">
                 <div class="title">Speed</div>
@@ -172,6 +186,7 @@ function onKeydown(e: KeyboardEvent)
                 <div class="relative-diff negative">-6%</div>
             </div>
         </div>
+
         <div class="nav">
             <a href="/stats">Your stats</a>
             <a href="/leaderboard">Leaderboard</a>
@@ -217,6 +232,37 @@ function onKeydown(e: KeyboardEvent)
     }
 }
 
+.main
+{
+    align-self: center;
+}
+
+.messages
+{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    opacity: .8;
+
+    div
+    {
+        margin-bottom: 16px;
+        padding: 8px 12px;
+
+        font-size: 16px;
+        font-weight: 500;
+
+        border-radius: 3px;
+
+        &.warn
+        {
+            background-color: #ffbb00;
+            color: $color-bg;
+        }
+    }
+}
+
 .text
 {
 
@@ -225,8 +271,6 @@ function onKeydown(e: KeyboardEvent)
     font-size: 36px;
     font-family: 'Source Code Pro', monospace;
     font-weight: 400;
-
-    align-self: center;
 
     span
     {
