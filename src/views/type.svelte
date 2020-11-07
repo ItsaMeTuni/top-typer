@@ -15,30 +15,27 @@ let parts: TextPart[] = [
     }
 ];
 
-let wordTimings: number[] = [];
-
-let wordsPerMinute: number = 0;
-$: {
-    const wordDurations = wordTimings.map(x => x / 1000);
-    wordsPerMinute = 60 / (wordDurations.reduce((acc, x) => acc + x, 0) / wordDurations.length);
-    wordsPerMinute = Math.floor(wordsPerMinute);
-}
-
-let lastWordTimestamp = 0;
-
-// Index of the word the user is currently typing
-let currWord = 0;
-
+let started = false;
+let ended = false;
+let currWordIndex = 0;
+let wordTimings: number[] = text.split(' ').map(_ => 0);
+const wordTickInterval = 50;
+const wpmUpdateInterval = 250;
 let capsLockActivated = false;
+
+let wpm = 0;
+
 
 function onKeypress(e: KeyboardEvent)
 {
-    capsLockActivated = e.key.toLowerCase() !== e.key && !e.shiftKey;
-
-    if(lastWordTimestamp === 0)
+    if(e.key === 'Enter')
     {
-        lastWordTimestamp = Date.now();
+        return;
     }
+
+    started = true;
+
+    capsLockActivated = e.key.toLowerCase() !== e.key && !e.shiftKey;
 
     const previewPart = parts[parts.length - 1];
     const lastConcretePart: TextPart | null = parts[parts.length - 2];
@@ -61,13 +58,7 @@ function onKeypress(e: KeyboardEvent)
 
     if(char === ' ')
     {
-        const words = lastConcretePart.text.split(' ');
-        const word = words[words.length - 1];
-
-        wordTimings[currWord] = Date.now() - lastWordTimestamp;
-        lastWordTimestamp = Date.now();
-
-        currWord += 1;
+        nextWord();
     }
 
     // If the user missed a space replace it with an underscore
@@ -101,6 +92,8 @@ function onKeypress(e: KeyboardEvent)
             previewPart,
         ];
     }
+
+    ended = previewPart.text.length === 0;
 }
 
 function onKeydown(e: KeyboardEvent)
@@ -122,9 +115,8 @@ function onKeydown(e: KeyboardEvent)
         let char = lastConcretePart.text.substr(-1, 1);
         if(char === '_')
         {
+            prevWord();
             char = ' ';
-
-            currWord -= 1;
         }
 
         // "Move" last character of lastConcretePart to start of preview
@@ -146,6 +138,38 @@ function onKeydown(e: KeyboardEvent)
         }
     }
 }
+
+function nextWord()
+{
+    currWordIndex += 1;
+    wordTimings[currWordIndex] = 0;
+}
+
+function prevWord()
+{
+    currWordIndex -= 1;
+}
+
+function wordTick()
+{
+    if(started)
+    {
+        wordTimings[currWordIndex] += wordTickInterval;
+    }
+}
+
+function calcWpm()
+{
+    if(started && !ended)
+    {
+        const typedWordTimings = wordTimings.slice(0, currWordIndex + 1);
+        const avgSecsPerWord = typedWordTimings.slice(0, currWordIndex + 1).reduce((acc, x) => acc + x, 0) / 1000 / typedWordTimings.length;   
+        wpm = Math.floor(60 / avgSecsPerWord);
+    }
+}
+
+setInterval(wordTick, wordTickInterval);
+setInterval(calcWpm, wpmUpdateInterval);
 
 </script>
 
@@ -177,7 +201,7 @@ function onKeydown(e: KeyboardEvent)
         <div class="stats">
             <div class="stat">
                 <div class="title">Speed</div>
-                <div class="value">{wordsPerMinute || 0}WPM</div>
+                <div class="value">{wpm}WPM</div>
                 <div class="relative-diff positive">+3%</div>
             </div>
             <div class="stat">
