@@ -29,7 +29,7 @@ let lastWordTimestamp = 0;
 // Index of the word the user is currently typing
 let currWord = 0;
 
-let capsLockActivated = true;
+let capsLockActivated = false;
 
 function onKeypress(e: KeyboardEvent)
 {
