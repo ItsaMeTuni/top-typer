@@ -179,7 +179,7 @@ function prevWord()
 
 function wordTick()
 {
-    if(started)
+    if(started && !ended)
     {
         wordStats[currWordIndex].duration += wordTickInterval;
     }
@@ -322,7 +322,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 {
     padding: 48px 0;
     display: grid;
-    grid-template-rows: repeat(4, auto);
+    grid-template-rows: 1fr auto 1fr auto;
     justify-items: center;
 
     height: 100vh;
@@ -337,7 +337,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
     div:first-child
     {
-        font-size: 74px;
+        font-size: 56px;
         text-transform: uppercase;
     }
 
@@ -345,7 +345,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
     {
         margin-top: 16px;
         margin-right: -15%;
-        font-size: 28px;
+        font-size: 22px;
         text-align: right;
     }
 }
@@ -386,7 +386,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
     width: 50ch;
 
-    font-size: 36px;
+    font-size: 32px;
     font-family: 'Source Code Pro', monospace;
     font-weight: 400;
 
@@ -419,7 +419,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
     align-items: center;
     justify-content: center;
 
-    align-self: flex-start;
+    align-self: center;
 }
 
 .stat
@@ -443,7 +443,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
     .title, .relative-diff
     {
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 400;
     }
 
@@ -454,7 +454,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
     .value
     {
-        font-size: 40px;
+        font-size: 36px;
         font-weight: 300;
     }
 

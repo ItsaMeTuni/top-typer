@@ -1,12 +1,15 @@
 <script lang="ts">
 
+import {Router, Route} from 'svelte-routing'
 import Type from './views/type.svelte'
+import Stats from './views/stats.svelte'
 
 </script>
 
-<main>
-    <Type></Type>
-</main>
+<Router>
+    <Route path="/" component={Type}></Route>
+    <Route path="/stats" component={Stats}></Route>
+</Router>
 
 <style lang="scss">
 

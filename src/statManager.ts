@@ -40,10 +40,15 @@ export function calcWpm(wordStats: WordStat[], currentWordIndex: number = -1): n
         currentWordIndex = wordStats.length;
     }
 
-    const wordDurations = wordStats.map(x => x.duration);
-    const typedWordDurations = wordDurations.slice(0, currentWordIndex + 1);
-    const avgSecsPerWord = typedWordDurations.slice(0, currentWordIndex + 1).reduce((acc, x) => acc + x, 0) / 1000 / typedWordDurations.length;   
-    return Math.floor(60 / avgSecsPerWord);
+    const overallDuration = wordStats.reduce((acc, x) => acc + x.duration, 0);
+    const characterCount = wordStats.slice(0, currentWordIndex + 1).reduce((acc, x) => acc + x.word, '').length;
+
+    // WPM is basically splitting the entire text into words of exactly
+    // 5 characters and dividing the amount of words by the time it took
+    // to write those words.
+    const wpm = (characterCount / 5) / ((overallDuration / 1000) / 60);
+
+    return Math.floor(wpm);
 }
 
 export function calcAccuracy(wordStats: WordStat[], currentWordIndex: number = -1): number
@@ -77,7 +82,6 @@ export function getStats(): Stat[]
     {
         const stat = new Stat();
 
-        stat.wpm        = value.wpm         || null;
         stat.accuracy   = value.accuracy    || null;
         stat.timestamp  = value.timestamp   || null;
 
