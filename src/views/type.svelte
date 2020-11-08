@@ -274,6 +274,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
                     <div class="warn">Caps Lock activated</div>
                 {/if}
             </div>
+
             <div
                 class="text"
                 tabindex="0"
@@ -308,6 +309,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
                 </div>
             </div>
         </div>
+        <div class="test-line"></div>
     </Layout>
 </template>
 
@@ -318,15 +320,17 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 .wrapper
 {
     align-self: center;
+    display: grid;
+    grid-template-rows: 1fr auto 1fr;
 }
 
 .messages
 {
-    margin-top: 64px;
-
     display: flex;
     flex-direction: row;
     align-items: center;
+
+    align-self: flex-end;
 
     height: 70px;
 
@@ -352,7 +356,6 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
 .text
 {
-
     width: 50ch;
 
     font-size: 32px;
@@ -390,7 +393,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
     align-items: center;
     justify-content: center;
 
-    align-self: center;
+    float: inline-start;
 }
 
 .stat
