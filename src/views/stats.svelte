@@ -1,5 +1,6 @@
 <script lang="typescript">
 import Graph from "../components/graph.svelte";
+import Layout from "../layout.svelte";
 import { calcAccuracy, calcWpm, getStats } from "../statManager";
 import {Dataset} from '../types/dataset';
 
@@ -12,11 +13,12 @@ const datasets = [
     new Dataset(accuracyHistory, '#6892FF', .5, 1),
 ];
 
-
 </script>
 
 <template>
-    <Graph datasets="{datasets}"></Graph>
+    <Layout>
+        <Graph datasets="{datasets}"></Graph>
+    </Layout>
 </template>
 
 <style lang="scss">

@@ -1,4 +1,5 @@
 <script lang="typescript">
+import Layout from "../layout.svelte";
 import { calcAccuracy, calcWpm, getStats, saveStat, Stat, WordStat } from "../statManager";
 
 
@@ -266,13 +267,8 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 </script>
 
 <template>
-    <div class="type">
-        <div class="logo">
-            <div>Top Typer</div>
-            <div>Type faster, much faster</div>
-        </div>
-
-        <div class="main">
+    <Layout>
+        <div class="wrapper">
             <div class="messages">
                 {#if capsLockActivated}
                     <div class="warn">Caps Lock activated</div>
@@ -288,86 +284,51 @@ setInterval(updateStatLabels, wpmUpdateInterval);
                     <span class={part.type}>{part.text}</span>
                 {/each}
             </div>
-        </div>
 
-        <div class="stats">
-            <div class="stat">
-                <div class="title">Speed</div>
-                <div class="value">{wpm}WPM</div>
-                <div
-                    class="relative-diff"
-                    class:positive={wpmRelativeDiff > 1}
-                >
-                    {wpmRelativeDiff >= 1 ? '+' : ''}{Math.floor(wpmRelativeDiff * 100) - 100}%
+            <div class="stats">
+                <div class="stat">
+                    <div class="title">Speed</div>
+                    <div class="value">{wpm}WPM</div>
+                    <div
+                        class="relative-diff"
+                        class:positive={wpmRelativeDiff > 1}
+                    >
+                        {wpmRelativeDiff >= 1 ? '+' : ''}{Math.floor(wpmRelativeDiff * 100) - 100}%
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="title">Accuracy</div>
+                    <div class="value">{Math.floor(accuracy * 100)}%</div>
+                    <div
+                        class="relative-diff"
+                        class:positive={accuracyRelativeDiff > 1}
+                    >
+                        {accuracyRelativeDiff >= 1 ? '+' : ''}{Math.floor(accuracyRelativeDiff * 100) - 100}%
+                    </div>
                 </div>
             </div>
-            <div class="stat">
-                <div class="title">Accuracy</div>
-                <div class="value">{Math.floor(accuracy * 100)}%</div>
-                <div
-                    class="relative-diff"
-                    class:positive={accuracyRelativeDiff > 1}
-                >
-                    {accuracyRelativeDiff >= 1 ? '+' : ''}{Math.floor(accuracyRelativeDiff * 100) - 100}%
-                </div>
-            </div>
         </div>
-
-        <div class="nav">
-            <a href="/stats">Your stats</a>
-            <a href="/leaderboard">Leaderboard</a>
-            <a href="/options">Options</a>
-            <a href="/about">About and FAQ</a>
-        </div>
-    </div>
+    </Layout>
 </template>
 
 <style lang="scss">
 
 @import '../styles/vars.scss';
 
-.type
-{
-    padding: 48px 0;
-    display: grid;
-    grid-template-rows: 1fr auto 1fr auto;
-    justify-items: center;
-
-    height: 100vh;
-
-    box-sizing: border-box;
-}
-
-.logo
-{
-    font-weight: 200;
-    align-self: flex-start;
-
-    div:first-child
-    {
-        font-size: 56px;
-        text-transform: uppercase;
-    }
-
-    div:last-child
-    {
-        margin-top: 16px;
-        margin-right: -15%;
-        font-size: 22px;
-        text-align: right;
-    }
-}
-
-.main
+.wrapper
 {
     align-self: center;
 }
 
 .messages
 {
+    margin-top: 64px;
+
     display: flex;
     flex-direction: row;
     align-items: center;
+
+    height: 70px;
 
     opacity: .8;
 
@@ -422,6 +383,8 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
 .stats
 {
+    margin-top: 64px;
+
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -475,19 +438,6 @@ setInterval(updateStatLabels, wpmUpdateInterval);
         {
             color: #50DB1F;
         }
-    }
-}
-
-.nav
-{
-    align-self: end;
-
-    a
-    {
-        margin: 0 24px;
-        color: inherit;
-        text-decoration: none;
-        font-size: 22px;
     }
 }
 
