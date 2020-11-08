@@ -1,6 +1,6 @@
 <script lang="typescript">
 import { onMount } from "svelte";
-import { xlink_attr } from "svelte/internal";
+import { text, xlink_attr } from "svelte/internal";
 
 import Layout from "../layout.svelte";
 import { calcAccuracy, calcWpm, getStats, saveStat, Stat, WordStat } from "../statManager";
@@ -13,7 +13,7 @@ class Token
     // How much time the user took to type this word.
     duration = 0;
 
-    // How much time the user too to type each character
+    // How much time the user took to type each character
     // of this word (even if the typed character was incorrect).
     // If the user deletes the character its duration resets to 0.
     characterDurations = [];
@@ -52,10 +52,10 @@ class RenderedToken
 
 let textTokens: Token[] = [];
 let renderedTokens: RenderedToken[] = [];
-const wpm = 0;
-const wpmRelativeDiff = 0;
-const accuracy = 0;
-const accuracyRelativeDiff = 0;
+let wpm = 0;
+let wpmRelativeDiff = 0;
+let accuracy = 0;
+let accuracyRelativeDiff = 0;
 
 // Index of the first 'preview' token in the renderedTokens array,
 // which is the rendered token whose first character is the next character
@@ -65,11 +65,15 @@ let currRenderedTokenIndex = 0;
 let started = false;
 let ended = false;
 
+let wordTimestamp: number = 0;
+let charTimestamp: number = 0;
+
 reset();
+setInterval(updateStats, 250);
 
 async function generateTokens(): Promise<Token[]>
 {
-    const text = await getRandomText(10, { short: .2, medium: .6, long: .2 });
+    const text = await getRandomText(3, { short: .2, medium: .6, long: .2 });
     const tokens = text.split(' ').map(s => new Token(s));
     const retVal = [];
 
@@ -107,10 +111,15 @@ function onKeypress(e: KeyboardEvent)
         return;
     }
 
+    if(!started)
+    {
+        wordTimestamp = Date.now();
+        charTimestamp = Date.now();
+    }
     started = true;
 
     let currPreviewToken = renderedTokens[currRenderedTokenIndex];
-    const currPreviewTextToken = currPreviewToken.token;
+    let currPreviewTextToken = currPreviewToken.token;
 
     const wordRenderedTokens = renderedTokens.filter(t => t.token === currPreviewTextToken);
 
@@ -123,9 +132,20 @@ function onKeypress(e: KeyboardEvent)
     // typedWord will have the two first elements of wordRenderedTokens.
     const typedWord = wordConcreteRTs.reduce((acc, x) => acc + x.text, '');
     
+    // Set the character timestamp for the character the user just typed
+    currPreviewTextToken.characterDurations[typedWord.length] = (Date.now() - charTimestamp) / 1000;
+
     // The character the user was expected to type
     const expectedChar = currPreviewTextToken.text[typedWord.length];
     const isTypo = e.key !== expectedChar;
+
+    
+
+    if(isTypo)
+    {
+        // Record typo at current character
+        currPreviewTextToken.typos.push(typedWord.length);
+    }
 
     const currConcreteRT = wordConcreteRTs[wordConcreteRTs.length - 1];
 
@@ -151,29 +171,47 @@ function onKeypress(e: KeyboardEvent)
         }
         else
         {
-            console.log('insert after');
             renderedTokens = arrInsertAfterPredicate(renderedTokens, rt, x => x === currConcreteRT);
         }
 
         currRenderedTokenIndex += 1;
         currPreviewToken = renderedTokens[currRenderedTokenIndex];
+        currPreviewTextToken = currPreviewToken.token;
     }
 
     // Remove text from current token
     currPreviewToken.text = currPreviewToken.text.substr(1); 
 
     // If the preview token doesn't have any more text,
-    // remove it from the rendered tokens.
+    // remove it from the rendered tokens. This also means
+    // the user just got to another token, so set the
+    // (last) token's duration.
     if(currPreviewToken.text.length === 0)
     {
+        currPreviewTextToken.duration = (Date.now() - wordTimestamp) / 1000;
+        wordTimestamp = Date.now();
+
         renderedTokens = renderedTokens.filter(x => x !== currPreviewToken);
 
         // Don't increment currRenderedTokenIndex here because we just removed
         // the preview token, so what would be the next token basically got shifted
         // into currRenderedTokenIndex
+
+        currPreviewToken = renderedTokens[currRenderedTokenIndex];
+        if(currPreviewToken !== undefined)
+        {
+            currPreviewTextToken = currPreviewToken.token;
+        }
     }
 
-    ended = currRenderedTokenIndex === renderedTokens.length;
+    charTimestamp = Date.now();
+
+    if(!ended && currRenderedTokenIndex === renderedTokens.length)
+    {
+        // update stats one last time before ending
+        updateStats();
+        ended = true;
+    }
 }
 
 function onKeydown(e: KeyboardEvent)
@@ -216,13 +254,59 @@ function onKeydown(e: KeyboardEvent)
             renderedTokens = renderedTokens.filter(x => x !== concreteRt);
             currRenderedTokenIndex -= 1;
         }
+
+        charTimestamp = Date.now();
     }
+}
+
+function updateStats()
+{
+    if(!started || ended)
+    {
+        return;
+    }
+
+    let currTextTokenIndex;
+    if(currTextTokenIndex < textTokens.length)
+    {
+        currTextTokenIndex = textTokens.indexOf(renderedTokens[currRenderedTokenIndex].token);
+    }
+    else
+    {
+        currTextTokenIndex = textTokens.length - 1;
+    }
+
+    let overallDuration = 0;
+    let typos = 0;
+    let charCount = 0;
+
+    for(let i = 0; i <= currTextTokenIndex ; i++) 
+    {
+        if(i === currTextTokenIndex)
+        {
+            overallDuration += (Date.now() - wordTimestamp) / 1000;
+        }
+        else
+        {
+            overallDuration += textTokens[i].duration;
+        }
+        typos += textTokens[i].typos.length;
+        charCount += textTokens[i].text.length;
+    }
+
+    wpm = Math.floor((charCount / 5) / (overallDuration / 60));
+    accuracy = 1 - (typos / charCount);
 }
 
 async function reset()
 {
     textTokens = await generateTokens();
     renderedTokens = generateRenderedTokens(textTokens);
+
+    started = false;
+    ended = false;
+
+    currRenderedTokenIndex = 0;
 }
 
 function arrInsertAfterPredicate<T>(arr: T[], x: T, pred: (T) => boolean): T[]
