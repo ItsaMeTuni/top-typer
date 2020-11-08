@@ -1,6 +1,9 @@
 <script lang="typescript">
+import { onMount } from "svelte";
+
 import Layout from "../layout.svelte";
 import { calcAccuracy, calcWpm, getStats, saveStat, Stat, WordStat } from "../statManager";
+import { getRandomText } from "../words";
 
 
 
@@ -10,7 +13,7 @@ interface TextPart
     type: 'normal' | 'error' | 'preview';
 }
 
-const text = 'Occaecat incididunt aliquip nostrud pariatur magna anim.';
+let text = 'Occaecat incididunt aliquip nostrud pariatur magna anim.';
 
 let parts: TextPart[] = [];
 let started = false;
@@ -33,7 +36,10 @@ let wpmRelativeDiff = 0;
 let accuracy = 0;
 let accuracyRelativeDiff = 0;
 
-reset();
+onMount(() =>
+{
+    reset();
+});
 
 function onKeypress(e: KeyboardEvent)
 {
@@ -226,8 +232,10 @@ function end()
     saveStat(stat);
 }
 
-function reset()
+async function reset()
 {
+    text = await getRandomText(10, { long: .2, medium: .6, short: .2 });
+
     parts = [
         {
             text: text,
