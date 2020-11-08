@@ -1,276 +1,198 @@
 <script lang="typescript">
 import { onMount } from "svelte";
+import { xlink_attr } from "svelte/internal";
 
 import Layout from "../layout.svelte";
 import { calcAccuracy, calcWpm, getStats, saveStat, Stat, WordStat } from "../statManager";
 import { getRandomText } from "../words";
 
-
-
-interface TextPart
+class Token
 {
-    text: string;
-    type: 'normal' | 'error' | 'preview';
+    text = '';
+
+    // How much time the user took to type this word.
+    duration = 0;
+
+    // How much time the user too to type each character
+    // of this word (even if the typed character was incorrect).
+    // If the user deletes the character its duration resets to 0.
+    characterDurations = [];
+
+    // Indexes of the characters in this word that the user typed
+    // wrong.
+    typos = [];
+
+    constructor(text: string)
+    {
+        this.text = text;
+        this.characterDurations = text.split('').map(_ => 0);
+        this.typos = [];
+    }
 }
 
-let text = 'Occaecat incididunt aliquip nostrud pariatur magna anim.';
+type RenderedTokenType = 'normal' | 'error' | 'preview';
 
-let parts: TextPart[] = [];
-let started = false;
-let ended = false;
-let currWordIndex = 0;
-// Index of the current character relative to the start
-// of the current word
-let currCharIndexRelative = 0;
-let wordStats: WordStat[] = [];
-let lastStat: Stat | null;
-let cachedLastStatWpm: number = 0
-let cachedLastStatAccuracy: number = 0
-
-const wordTickInterval = 50;
-const wpmUpdateInterval = 250;
-let capsLockActivated = false;
-
-let wpm = 0;
-let wpmRelativeDiff = 0;
-let accuracy = 0;
-let accuracyRelativeDiff = 0;
-
-onMount(() =>
+// This stores information about each <span> that's
+// rendered to the user.
+class RenderedToken
 {
-    reset();
-});
+    // All or a portion of the text of the token, with or without typos.
+    // Basically the group of letters the user typed for the token.
+    text: string;
+    token: Token;
+    type: RenderedTokenType;
+
+    constructor(token: Token, text: string, type: RenderedTokenType)
+    {
+        this.token = token;
+        this.text = text;
+        this.type = type;
+    }
+}
+
+let textTokens: Token[] = [];
+let renderedTokens: RenderedToken[] = [];
+const wpm = 0;
+const wpmRelativeDiff = 0;
+const accuracy = 0;
+const accuracyRelativeDiff = 0;
+
+// Index of the first 'preview' token in the renderedTokens array,
+// which is the rendered token whose first character is the next character
+// the user will type.
+let currRenderedTokenIndex = 0;
+
+reset();
+
+async function generateTokens(): Promise<Token[]>
+{
+    const text = await getRandomText(10, { short: .2, medium: .6, long: .2 });
+    const tokens = text.split(' ').map(s => new Token(s));
+    const retVal = [];
+
+    for(let i = 0; i < tokens.length; i++)
+    {
+        retVal.push(tokens[i]);
+        if(i < tokens.length - 1)
+        {
+            retVal.push(new Token(' '));
+        }
+    }
+
+    return retVal;
+}
+
+function generateRenderedTokens(tokens: Token[]): RenderedToken[]
+{
+    return tokens.map(token => new RenderedToken(token, token.text, 'preview'));
+}
 
 function onKeypress(e: KeyboardEvent)
 {
-    if(e.key === 'Enter' || ended)
+    let currPreviewToken = renderedTokens[currRenderedTokenIndex];
+    const currPreviewTextToken = currPreviewToken.token;
+
+    const wordRenderedTokens = renderedTokens.filter(t => t.token === currPreviewTextToken);
+
+    // RenderedTokens from wordRenderedTokens that are not of 'preview' type
+    const wordConcreteRTs = wordRenderedTokens.filter(t => t.type !== 'preview');
+
+    // The string the user has typed for currTextToken. If currTextToken is 'lasagna'
+    // and wordRenderedTokens is
+    // `[{text: 'lasa', type: 'normal'}, {text: 'h', type: 'error'}, {text: 'na', type: 'preview'}]`,
+    // typedWord will have the two first elements of wordRenderedTokens.
+    const typedWord = wordConcreteRTs.reduce((acc, x) => acc + x.text, '');
+    
+    // The character the user was expected to type
+    const expectedChar = currPreviewTextToken.text[typedWord.length];
+    const isTypo = e.key !== expectedChar;
+
+    const currConcreteRT = wordConcreteRTs[wordConcreteRTs.length - 1];
+
+    // Append typed character to current concrete rendered token
+    // but only if the type of the token matches whether or not
+    // the typed character is a typo.
+    if(currConcreteRT !== undefined && isTypo === (currConcreteRT.type === 'error'))
     {
-        if(e.key === 'Enter' && ended)
-        {
-            reset();
-        }
-        return;
-    }
-
-    started = true;
-
-    capsLockActivated = e.key.toLowerCase() !== e.key && !e.shiftKey;
-
-    const previewPart = parts[parts.length - 1];
-    const lastConcretePart: TextPart | null = parts[parts.length - 2];
-
-    const expectedChar = previewPart.text[0]; // Character we were expecting the user to type
-    const inputChar = e.key; // Character the user actually typed
-
-
-    // Remove the first character of the preview part, since it will
-    // be added to another part.
-    previewPart.text = previewPart.text.substr(1);
-
-    // If the user typed the correct character we want to create/append
-    // the character to a normal part, otherwise we want to create/append
-    // it to an error part.
-    const partType = inputChar === expectedChar ? 'normal' : 'error';
-
-    // Character to be added to part
-    let char = expectedChar;
-
-    if(char === ' ')
-    {
-        nextWord();
-    }
-    else
-    {
-        currCharIndexRelative += 1;
-    }
-
-    if(partType === 'error')
-    {
-        // Register a typo in the WordStat of the current word
-        const currWordStat = wordStats[currWordIndex];
-        currWordStat.typos.push(currCharIndexRelative);
-    }
-
-    // If the user missed a space replace it with an underscore
-    // so the mistake is visible
-    if(char === ' ' && partType === 'error')
-    {
-        char = '_';
-    }
-
-    // If the partType is the same as the type of the last concrete part,
-    // just append the expected letter to the last concrete part.
-    if(lastConcretePart != null && lastConcretePart.type === partType)
-    {
-        lastConcretePart.text = lastConcretePart.text + char;
+        currConcreteRT.text += expectedChar;
 
         // Trigger svelte update
-        parts = parts;
+        renderedTokens = renderedTokens;
     }
-    // Otherwise, create a new part with the type we want
-    // and insert it right before the previewPart
+    // Otherwise, create a new token with the correct type.
     else
     {
-        const newPart: TextPart = {
-            text: char,
-            type: partType,
-        };
+        const type = isTypo ? 'error' : 'normal';
+        const rt = new RenderedToken(currPreviewTextToken, expectedChar, type);
 
-        parts = [
-            ...parts.slice(0, parts.length - 1),
-            newPart,
-            previewPart,
-        ];
+        if(currConcreteRT === undefined)
+        {
+            renderedTokens = arrInsertBeforePredicate(renderedTokens, rt, x => x.type === 'preview');
+        }
+        else
+        {
+            console.log('insert after');
+            renderedTokens = arrInsertAfterPredicate(renderedTokens, rt, x => x === currConcreteRT);
+        }
+
+        currRenderedTokenIndex += 1;
+        currPreviewToken = renderedTokens[currRenderedTokenIndex];
     }
 
-    if(previewPart.text.length === 0)
+    // Remove text from current token
+    currPreviewToken.text = currPreviewToken.text.substr(1); 
+
+    // If the preview token doesn't have any more text,
+    // remove it from the rendered tokens.
+    if(currPreviewToken.text.length === 0)
     {
-        end();
+        renderedTokens = renderedTokens.filter(x => x !== currPreviewToken);
+
+        // Don't increment currRenderedTokenIndex here because we just removed
+        // the preview token, so what would be the next token basically got shifted
+        // into currRenderedTokenIndex
     }
+
+    console.log({i: currRenderedTokenIndex, txt: renderedTokens[currRenderedTokenIndex].text});
 }
 
 function onKeydown(e: KeyboardEvent)
 {
-    // Handle backspace by basically moving the last character
-    // of the last concrete part to the start of the preview
-    if(e.key === 'Backspace')
-    {
-        const previewPart = parts[parts.length - 1];
-        const lastConcretePart: TextPart | null = parts[parts.length - 2];
-
-        if(lastConcretePart === undefined)
-        {
-            return;
-        }
-
-        // If the character was an underscore replace it with a space,
-        // since it was put there just to signal a mistake to the user.
-        let char = lastConcretePart.text.substr(-1, 1);
-        if(char === '_')
-        {
-            prevWord();
-            char = ' ';
-        }
-
-        // "Move" last character of lastConcretePart to start of preview
-        previewPart.text = char + previewPart.text;
-        lastConcretePart.text = lastConcretePart.text.substr(0, lastConcretePart.text.length - 1);
-
-        // Remove lastConcretePart from parts if it has no content
-        if(lastConcretePart.text.length <= 0)
-        {
-            parts = [
-                ...parts.slice(0, parts.length - 2),
-                previewPart
-            ];
-        }
-        else
-        {
-            // Trigger svelte update
-            parts = parts;
-        }
-    }
-}
-
-function nextWord()
-{
-    currWordIndex += 1;
-    currCharIndexRelative = 0;
-    wordStats[currWordIndex].duration = 0;
-}
-
-function prevWord()
-{
-    currWordIndex -= 1;
-}
-
-function wordTick()
-{
-    if(started && !ended)
-    {
-        wordStats[currWordIndex].duration += wordTickInterval;
-    }
-}
-
-function updateStatLabels()
-{
-    if(started && !ended)
-    {
-        wpm = calcWpm(wordStats, currWordIndex);
-        accuracy = calcAccuracy(wordStats, currWordIndex);
-
-        if(lastStat !== null && started)
-        {
-            wpmRelativeDiff = wpm / cachedLastStatWpm;
-            accuracyRelativeDiff = accuracy / cachedLastStatAccuracy;
-        }
-        else
-        {
-            wpmRelativeDiff = 1;
-            accuracyRelativeDiff = 1;
-        }
-    }
-}
-
-function end()
-{
-    if(ended)
-    {
-        return;
-    }
-
-
-    ended = true;
-
-    console.log(wordStats);
-
-    const stat = new Stat();
-
-    stat.timestamp = Date.now();
-    stat.words = wordStats;
-
-    saveStat(stat);
+    
 }
 
 async function reset()
 {
-    text = await getRandomText(10, { long: .2, medium: .6, short: .2 });
-
-    parts = [
-        {
-            text: text,
-            type: 'preview',
-        }
-    ];
-
-    started = false;
-    ended = false;
-    currWordIndex = 0;
-    currCharIndexRelative = 0;
-    wordStats = WordStat.fromText(text);
-
-    const statHistory = getStats();
-
-    lastStat = statHistory[statHistory.length - 1];
-    if(lastStat)
-    {
-        cachedLastStatWpm = calcWpm(lastStat.words);
-        cachedLastStatAccuracy = calcAccuracy(lastStat.words);
-    }
-    else
-    {
-        cachedLastStatWpm = 0;
-        cachedLastStatAccuracy = 0;
-    }
-
-    wpm = 0;
-    accuracy = 0;
-    wpmRelativeDiff = 1;
-    accuracyRelativeDiff = 1;
+    textTokens = await generateTokens();
+    console.log(textTokens);
+    renderedTokens = generateRenderedTokens(textTokens);
 }
 
-setInterval(wordTick, wordTickInterval);
-setInterval(updateStatLabels, wpmUpdateInterval);
+function arrInsertAfterPredicate<T>(arr: T[], x: T, pred: (T) => boolean): T[]
+{
+    for(let i = 0; i < arr.length; i++)
+    {
+        if(pred(arr[i]))
+        {
+            return [...arr.slice(0, i + 1), x, ...arr.slice(i + 1)];
+        }
+    }
+
+    return [...arr, x];
+}
+
+function arrInsertBeforePredicate<T>(arr: T[], x: T, pred: (T) => boolean): T[]
+{
+    for(let i = 0; i < arr.length; i++)
+    {
+        if(pred(arr[i]))
+        {
+            return [...arr.slice(0, i), x, ...arr.slice(i)];
+        }
+    }
+
+    return [...arr, x];
+}
 
 </script>
 
@@ -278,7 +200,7 @@ setInterval(updateStatLabels, wpmUpdateInterval);
     <Layout>
         <div class="wrapper">
             <div class="messages">
-                {#if capsLockActivated}
+                {#if false}
                     <div class="warn">Caps Lock activated</div>
                 {/if}
             </div>
@@ -289,8 +211,10 @@ setInterval(updateStatLabels, wpmUpdateInterval);
                 on:keypress={onKeypress}
                 on:keydown={onKeydown}
             >
-                {#each parts as part}
-                    <span class={part.type}>{part.text}</span>
+                {#each renderedTokens as token}
+                    <span
+                        class={'token ' + token.type}
+                    >{token.text}</span>
                 {/each}
             </div>
 
@@ -372,9 +296,6 @@ setInterval(updateStatLabels, wpmUpdateInterval);
 
     span
     {
-        word-break: break-all;
-        word-wrap: break-word;
-
         &.preview
         {
             opacity: .4;
