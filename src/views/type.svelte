@@ -62,6 +62,9 @@ const accuracyRelativeDiff = 0;
 // the user will type.
 let currRenderedTokenIndex = 0;
 
+let started = false;
+let ended = false;
+
 reset();
 
 async function generateTokens(): Promise<Token[]>
@@ -89,6 +92,23 @@ function generateRenderedTokens(tokens: Token[]): RenderedToken[]
 
 function onKeypress(e: KeyboardEvent)
 {
+    if(e.key === 'Enter')
+    {
+        if(ended)
+        {
+            reset();
+        }
+
+        return;
+    }
+    
+    if(ended)
+    {
+        return;
+    }
+
+    started = true;
+
     let currPreviewToken = renderedTokens[currRenderedTokenIndex];
     const currPreviewTextToken = currPreviewToken.token;
 
@@ -153,18 +173,55 @@ function onKeypress(e: KeyboardEvent)
         // into currRenderedTokenIndex
     }
 
-    console.log({i: currRenderedTokenIndex, txt: renderedTokens[currRenderedTokenIndex].text});
+    ended = currRenderedTokenIndex === renderedTokens.length;
 }
 
 function onKeydown(e: KeyboardEvent)
 {
-    
+    if(ended)
+    {
+        return;
+    }
+
+    if(e.key === 'Backspace')
+    {
+        let currPreviewToken = renderedTokens[currRenderedTokenIndex];
+        
+        const concreteRtIndex = renderedTokens.indexOf(currPreviewToken) - 1;
+
+        if(concreteRtIndex < 0)
+        {
+            return;
+        }
+
+        const concreteRt = renderedTokens[concreteRtIndex];
+
+        if(concreteRt.token === currPreviewToken.token)
+        {
+            currPreviewToken.text = concreteRt.text[concreteRt.text.length - 1] + currPreviewToken.text;
+            renderedTokens = renderedTokens;
+        }
+        else
+        {
+            const rt = new RenderedToken(concreteRt.token, concreteRt.text[concreteRt.text.length - 1], 'preview');
+            renderedTokens = arrInsertBeforePredicate(renderedTokens, rt, x => x === currPreviewToken);
+
+            // No need to change the index here, since we just inserted rt at currRenderedTokenIndex
+        }
+
+        concreteRt.text = concreteRt.text.substr(0, concreteRt.text.length - 1);
+
+        if(concreteRt.text.length === 0)
+        {
+            renderedTokens = renderedTokens.filter(x => x !== concreteRt);
+            currRenderedTokenIndex -= 1;
+        }
+    }
 }
 
 async function reset()
 {
     textTokens = await generateTokens();
-    console.log(textTokens);
     renderedTokens = generateRenderedTokens(textTokens);
 }
 
