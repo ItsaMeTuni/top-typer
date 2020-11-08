@@ -1,4 +1,10 @@
 <script lang="typescript">
+/**
+ * NOTE: This view is a mess. We should extract the typewriter into
+ * a separate component and separate input handling and rendering
+ * into two different modules.
+ */
+
 import { onMount } from "svelte";
 import { text, xlink_attr } from "svelte/internal";
 
