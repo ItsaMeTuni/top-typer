@@ -27,7 +27,6 @@ export class WordStat
 
 export class Stat
 {
-    accuracy: number = 0;
     words: WordStat[] = [];
 
     timestamp: number = 0;

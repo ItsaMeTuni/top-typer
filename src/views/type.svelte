@@ -243,8 +243,16 @@ function reset()
     const statHistory = getStats();
 
     lastStat = statHistory[statHistory.length - 1];
-    cachedLastStatWpm = calcWpm(lastStat.words);
-    cachedLastStatAccuracy = calcAccuracy(lastStat.words);
+    if(lastStat)
+    {
+        cachedLastStatWpm = calcWpm(lastStat.words);
+        cachedLastStatAccuracy = calcAccuracy(lastStat.words);
+    }
+    else
+    {
+        cachedLastStatWpm = 0;
+        cachedLastStatAccuracy = 0;
+    }
 
     wpm = 0;
     accuracy = 0;
