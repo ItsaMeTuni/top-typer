@@ -1,6 +1,4 @@
 <script lang="typescript">
-import { WordStat } from "../statManager";
-
 import type { Word, Typewriter } from "../typewriter";
 
 export let typewriter: Typewriter;

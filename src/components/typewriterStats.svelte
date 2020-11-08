@@ -1,4 +1,6 @@
 <script lang="typescript">
+import { Stat } from "../statManager";
+
 import type { Word, Typewriter } from "../typewriter";
 
 export let typewriter: Typewriter;
@@ -8,7 +10,7 @@ let wpmDiff = 0;
 let accuracy = 0;
 let accuracyDiff = 0;
 
-setInterval(updateStats, 50);
+const intervalId = setInterval(updateStats, 50);
 
 function updateStats()
 {
@@ -17,16 +19,9 @@ function updateStats()
         return;
     }
 
-    const words: Word[] = typewriter.getWords();
-    const duration = words.reduce((acc, x) => acc + x.duration, 0);
-    const charCount = words.reduce((acc, x) => x.duration > 0 ? acc + x.text.length : acc, 0);    
-    wpm = (charCount / 5) / (duration / 60);
-    wpm = Math.floor(wpm);
-
-    const typos: Map<string, number> = typewriter.getCharTypos();
-    const typoCount = Array.from(typos.values()).reduce((acc, x) => acc + x, 0);
-    accuracy = 1 - (typoCount / typewriter.getKeystrokeCount());
-    accuracy = Math.floor(accuracy * 100);
+    const stats = Stat.fromTypewriter(typewriter).calculateStats();
+    wpm = stats.wpm;
+    accuracy = Math.floor(stats.keystrokeAccuracy * 100);
 }
 
 </script>

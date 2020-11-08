@@ -50,6 +50,7 @@ export class Typewriter
     getWordIndex() { return this.currWordIndex; }
     getCharTypos() { return clone(this.charTypos); }
     getCharDurations() { return clone(this.charDurations); }
+    getWordIntervalDelays() { return clone(this.wordIntervalDelays); }
     getKeystrokeCount() { return this.keystrokeCount; }
     get hasStarted() { return this.started; }
     get hasEnded() { return this.ended; }
