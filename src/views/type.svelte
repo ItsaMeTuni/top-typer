@@ -52,6 +52,7 @@ class RenderedToken
 
 let textTokens: Token[] = [];
 let renderedTokens: RenderedToken[] = [];
+let renderedTokenSpans: HTMLSpanElement[] = [];
 let wpm = 0;
 let wpmRelativeDiff = 0;
 let accuracy = 0;
@@ -68,12 +69,28 @@ let ended = false;
 let wordTimestamp: number = 0;
 let charTimestamp: number = 0;
 
+let textEl: HTMLElement;
+
+const framerate = 60;
+
 reset();
 setInterval(updateStats, 250);
+setInterval(frameTick, 1000 / framerate);
+
+async function reset()
+{
+    textTokens = await generateTokens();
+    renderedTokens = generateRenderedTokens(textTokens);
+
+    started = false;
+    ended = false;
+
+    currRenderedTokenIndex = 0;
+}
 
 async function generateTokens(): Promise<Token[]>
 {
-    const text = await getRandomText(3, { short: .2, medium: .6, long: .2 });
+    const text = await getRandomText(100, { short: .2, medium: .6, long: .2 });
     const tokens = text.split(' ').map(s => new Token(s));
     const retVal = [];
 
@@ -266,47 +283,40 @@ function updateStats()
         return;
     }
 
-    let currTextTokenIndex;
-    if(currTextTokenIndex < textTokens.length)
-    {
-        currTextTokenIndex = textTokens.indexOf(renderedTokens[currRenderedTokenIndex].token);
-    }
-    else
-    {
-        currTextTokenIndex = textTokens.length - 1;
-    }
-
-    let overallDuration = 0;
-    let typos = 0;
     let charCount = 0;
 
-    for(let i = 0; i <= currTextTokenIndex ; i++) 
+    for(let i = 0; i < currRenderedTokenIndex; i++) 
     {
-        if(i === currTextTokenIndex)
-        {
-            overallDuration += (Date.now() - wordTimestamp) / 1000;
-        }
-        else
-        {
-            overallDuration += textTokens[i].duration;
-        }
-        typos += textTokens[i].typos.length;
-        charCount += textTokens[i].text.length;
+        charCount += renderedTokens[i].text.length;
+    }
+
+    const typedTextTokens = renderedTokens.slice(0, currRenderedTokenIndex)
+        .map(x => x.token)
+        .filter((x, i, arr) => !arr.slice(0, i).includes(x));
+
+    const typos = typedTextTokens.reduce((acc, x) => acc + x.typos.length, 0);
+    
+    let overallDuration = typedTextTokens.reduce((acc, x) => acc + x.duration, 0);
+    if(currRenderedTokenIndex < renderedTokens.length)
+    {
+        overallDuration += (Date.now() - wordTimestamp) / 1000;
     }
 
     wpm = Math.floor((charCount / 5) / (overallDuration / 60));
     accuracy = 1 - (typos / charCount);
 }
 
-async function reset()
+function frameTick()
 {
-    textTokens = await generateTokens();
-    renderedTokens = generateRenderedTokens(textTokens);
+    if(!started || ended)
+    {
+        return;
+    }
 
-    started = false;
-    ended = false;
+    const target = renderedTokenSpans[currRenderedTokenIndex].offsetTop;
+    const pos = textEl.scrollTop;
 
-    currRenderedTokenIndex = 0;
+    textEl.scrollBy(0, (target - pos) * (1/framerate) * 15);
 }
 
 function arrInsertAfterPredicate<T>(arr: T[], x: T, pred: (T) => boolean): T[]
@@ -345,18 +355,21 @@ function arrInsertBeforePredicate<T>(arr: T[], x: T, pred: (T) => boolean): T[]
                     <div class="warn">Caps Lock activated</div>
                 {/if}
             </div>
-
-            <div
-                class="text"
-                tabindex="0"
-                on:keypress={onKeypress}
-                on:keydown={onKeydown}
-            >
-                {#each renderedTokens as token}
-                    <span
-                        class={'token ' + token.type}
-                    >{token.text}</span>
-                {/each}
+            <div class="text-wrapper">
+                <div
+                    class="text"
+                    tabindex="0"
+                    on:keypress={onKeypress}
+                    on:keydown={onKeydown}
+                    bind:this={textEl}
+                >
+                    {#each renderedTokens as token, i}
+                        <span
+                            class={'token ' + token.type}
+                            bind:this={renderedTokenSpans[i]}
+                        >{token.text}</span>
+                    {/each}
+                </div>
             </div>
 
             <div class="stats">
@@ -427,13 +440,44 @@ function arrInsertBeforePredicate<T>(arr: T[], x: T, pred: (T) => boolean): T[]
     }
 }
 
-.text
+.text-wrapper
 {
-    width: 50ch;
+    position: relative;
 
     font-size: 32px;
     font-family: 'Source Code Pro', monospace;
     font-weight: 400;
+    line-height: 1.3em;
+
+    max-height: calc(1.3em * 3.8);
+
+    overflow: hidden;
+
+
+    &::after
+    {
+        content: '';
+
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+
+        height: calc(1.3em);
+
+        background: linear-gradient(0deg, $color-bg 0%, transparentize($color-bg, 1) 100%);
+
+        pointer-events: none;
+    }
+}
+
+.text
+{
+    width: 50ch;
+    
+    height: calc(1.3em * 3.8);
+
+    overflow: hidden;
 
     span
     {
