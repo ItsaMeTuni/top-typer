@@ -10,7 +10,10 @@ export interface CalculatedStat
     avgTypingDelay: Map<string, number>;
     avgWordDelay: number;
     wordRhythm: number;
-    keystrokeRhythm: number 
+
+    // The user's keystroke pace. 0 to 1, 1 being a perfect
+    // pace (same amount of delay between each keystroke).
+    pace: number;
 }
 
 export class Stat
@@ -96,8 +99,7 @@ export class Stat
 
 
         // Calculate keystrokeRhythm
-        const typingDelays1d = Array.from(this.charDurations.values())
-            .reduce((acc, x) => [...acc, ...x], []);
+        const typingDelays1d = flatten(Array.from(this.charDurations.values()));
 
         const avgTypingDelay = typingDelays1d.reduce((acc, x) => acc + x, 0) / typingDelays1d.length;
 
@@ -116,6 +118,8 @@ export class Stat
         const keystrokeDelayStdDeviation = Math.sqrt(keystrokeDelayVariance);
 
 
+        const pace = 1 - keystrokeDelayStdDeviation;
+
         return {
             wpm,
             keystrokeAccuracy,
@@ -124,7 +128,7 @@ export class Stat
             avgTypingDelay: avgTypingDelayPerKey,
             avgWordDelay,
             wordRhythm: wordDelayStdDeviation * 100,
-            keystrokeRhythm: keystrokeDelayStdDeviation * 100,
+            pace,
         };
     }
 }
@@ -138,8 +142,8 @@ export function saveStat(stat: Stat)
     const stats = getStats();
 
     stats.push(stat);
-
-
+    
+    
     const statsPlain = stats.map(x => x.toPlain());
 
     localStorage.setItem(STAT_HISTORY, JSON.stringify(statsPlain));
@@ -150,6 +154,7 @@ export function getStats()
     if(cache === null)
     {
         const stored = localStorage.getItem(STAT_HISTORY);
+
         if(stored !== null)
         {
             cache = JSON.parse(stored).map(x => Stat.fromPlain(x));
@@ -161,4 +166,9 @@ export function getStats()
     }
     
     return cache;
+}
+
+function flatten<T>(arr: T[][]): T[]
+{
+    return arr.reduce((acc, x) => [...acc, ...x], []);
 }

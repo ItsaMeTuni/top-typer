@@ -8,12 +8,14 @@ import type { Word, Typewriter } from "../typewriter";
 
 export let typewriter: Typewriter;
 
-let lastCalculatedStats: CalculatedStat | null;
+let lastCalculatedStats: CalculatedStat | null = null;
 
 let wpm = 0;
 let wpmDiff = 0;
 let accuracy = 0;
 let accuracyDiff = 0;
+let pace = 0;
+let paceDiff = 0;
 
 onMount(() => {
     setInterval(updateStats, 50);
@@ -31,17 +33,28 @@ function updateStats()
     const stats = Stat.fromTypewriter(typewriter).calculateStats();
     wpm = stats.wpm;
     accuracy = Math.floor(stats.keystrokeAccuracy * 100);
+    pace = Math.floor(stats.pace * 100);
 
     if(lastCalculatedStats !== null)
     {
         wpmDiff = Math.floor((wpm / lastCalculatedStats.wpm) * 100) - 100;
         accuracyDiff = Math.floor((stats.keystrokeAccuracy / lastCalculatedStats.keystrokeAccuracy) * 100) - 100;
+        paceDiff = Math.floor((stats.pace / lastCalculatedStats.pace) * 100) - 100;
     }
 }
 
 function cacheLastCalculatedStats()
 {
-    lastCalculatedStats = getStats().pop().calculateStats();
+    const stats = getStats();
+    const lastStat = stats[stats.length - 1];
+    if(lastStat)
+    {
+        lastCalculatedStats = lastStat.calculateStats();
+    }
+    else
+    {
+        lastCalculatedStats = null;
+    }
 }
 
 </script>
@@ -49,7 +62,7 @@ function cacheLastCalculatedStats()
 <template>
     <div class="stats">
         <div class="stat">
-            <div class="title">Speed</div>
+            <div class="title">Raw speed</div>
             <div class="value">{wpm}WPM</div>
             <div
                 class="relative-diff"
@@ -66,6 +79,16 @@ function cacheLastCalculatedStats()
                 class:positive={accuracyDiff > 1}
             >
                 {accuracyDiff >= 0 ? '+' : ''}{accuracyDiff}%
+            </div>
+        </div>
+        <div class="stat">
+            <div class="title">Pace</div>
+            <div class="value">{pace}%</div>
+            <div
+                class="relative-diff"
+                class:positive={paceDiff > 1}
+            >
+                {paceDiff >= 0 ? '+' : ''}{paceDiff}%
             </div>
         </div>
     </div>
