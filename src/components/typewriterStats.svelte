@@ -1,16 +1,25 @@
 <script lang="typescript">
-import { Stat } from "../statManager";
+import { onMount } from "svelte";
+
+import { Stat, getStats } from "../statManager";
+import type { CalculatedStat } from "../statManager";
 
 import type { Word, Typewriter } from "../typewriter";
 
 export let typewriter: Typewriter;
+
+let lastCalculatedStats: CalculatedStat | null;
 
 let wpm = 0;
 let wpmDiff = 0;
 let accuracy = 0;
 let accuracyDiff = 0;
 
-const intervalId = setInterval(updateStats, 50);
+onMount(() => {
+    setInterval(updateStats, 50);
+    cacheLastCalculatedStats();
+    typewriter.attachEndListener(cacheLastCalculatedStats);
+});
 
 function updateStats()
 {
@@ -22,6 +31,17 @@ function updateStats()
     const stats = Stat.fromTypewriter(typewriter).calculateStats();
     wpm = stats.wpm;
     accuracy = Math.floor(stats.keystrokeAccuracy * 100);
+
+    if(lastCalculatedStats !== null)
+    {
+        wpmDiff = Math.floor((wpm / lastCalculatedStats.wpm) * 100) - 100;
+        accuracyDiff = Math.floor((stats.keystrokeAccuracy / lastCalculatedStats.keystrokeAccuracy) * 100) - 100;
+    }
+}
+
+function cacheLastCalculatedStats()
+{
+    lastCalculatedStats = getStats().pop().calculateStats();
 }
 
 </script>

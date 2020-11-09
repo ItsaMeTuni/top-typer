@@ -12,7 +12,7 @@ setup();
 
 async function setup()
 {
-    const text = await getRandomText(3, { short: .2, medium: .6, long: .2 });
+    const text = await getRandomText(15, { short: .2, medium: .6, long: .2 });
     typewriter.reset(text);
 }
 

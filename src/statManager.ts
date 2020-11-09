@@ -1,7 +1,7 @@
 import clone from 'clone';
 import { Typewriter, Word } from './typewriter'
 
-interface CalculatedStat
+export interface CalculatedStat
 {
     wpm: number;
     keystrokeAccuracy: number;
