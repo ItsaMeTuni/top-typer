@@ -98,7 +98,7 @@ export class Stat
         const wordDelayStdDeviation = Math.sqrt(wordDelayVariance);
 
 
-        // Calculate keystrokeRhythm
+        // Calculate pace
         const typingDelays1d = flatten(Array.from(this.charDurations.values()));
 
         const avgTypingDelay = typingDelays1d.reduce((acc, x) => acc + x, 0) / typingDelays1d.length;
