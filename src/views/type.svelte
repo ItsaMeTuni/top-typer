@@ -5,15 +5,15 @@ import Layout from "../layout.svelte";
 import {Typewriter} from "../typewriter";
 import { getRandomText } from "../words";
 
-let typewriter: Typewriter;
+let typewriter: Typewriter = new Typewriter('');
 
 
 setup();
 
 async function setup()
 {
-    const text = await getRandomText(10, { short: .2, medium: .6, long: .2 });
-    typewriter = new Typewriter(text);
+    const text = await getRandomText(3, { short: .2, medium: .6, long: .2 });
+    typewriter.reset(text);
 }
 
 </script>

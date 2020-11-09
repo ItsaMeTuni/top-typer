@@ -1,4 +1,6 @@
 <script lang="typescript">
+import { onMount } from "svelte";
+
 import type { Word, Typewriter } from "../typewriter";
 
 export let typewriter: Typewriter;
@@ -19,7 +21,13 @@ class Fragment
 }
 
 let fragments: Fragment[] = [];
-$: if(typewriter !== undefined) render();
+
+onMount(() =>
+{
+    typewriter.attachRenderListener(render);
+    render();
+});
+
 
 function render()
 {
@@ -67,7 +75,6 @@ function onKeypress(e: KeyboardEvent)
     }
 
     typewriter.write(e.key);
-    render();
 }
 
 function onKeydown(e: KeyboardEvent)
@@ -76,7 +83,6 @@ function onKeydown(e: KeyboardEvent)
     {
         typewriter.undo();
     }
-    render();
 }
 
 </script>

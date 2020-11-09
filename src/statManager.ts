@@ -1,4 +1,5 @@
-import type { Typewriter, Word } from './typewriter'
+import clone from 'clone';
+import { Typewriter, Word } from './typewriter'
 
 interface CalculatedStat
 {
@@ -35,6 +36,35 @@ export class Stat
         return stat;
     }
 
+    static fromPlain(plain: any): Stat
+    {
+        const stat = new Stat();
+
+        stat.words = plain.words.map(x => Word.fromPlain(x));
+        stat.keystrokeCount = plain.keystrokeCount;
+        stat.charTypos = new Map(plain.charTypos);
+        stat.charDurations = new Map(plain.charDurations);
+        stat.wordIntervalDelays = plain.wordIntervalDelays;
+        stat.timestamp = plain.timestamp;
+
+        plain.__proto__ = Stat.prototype;
+
+        return stat;
+    }
+
+    toPlain(): any
+    {
+        const plain: any = clone(this);
+
+        plain.words = plain.words.map(x => x.toPlain());
+        plain.charTypos = Array.from(plain.charTypos.entries());
+        plain.charDurations = Array.from(plain.charDurations.entries());
+
+        plain.__proto__ = Object.prototype;
+
+        return plain;
+    }
+
     calculateStats(): CalculatedStat
     {
         const duration = this.words.reduce((acc, x) => acc + x.duration, 0);
@@ -54,7 +84,6 @@ export class Stat
         );
 
         const avgWordDelay = this.wordIntervalDelays.reduce((acc, x) => acc + x, 0) / this.wordIntervalDelays.length;
-        
         
         // Calculate wordRhythm
         let wordDelayVariance = 0;
@@ -110,7 +139,10 @@ export function saveStat(stat: Stat)
 
     stats.push(stat);
 
-    localStorage.setItem(STAT_HISTORY, JSON.stringify(stats));
+
+    const statsPlain = stats.map(x => x.toPlain());
+
+    localStorage.setItem(STAT_HISTORY, JSON.stringify(statsPlain));
 }
 
 export function getStats()
@@ -120,7 +152,7 @@ export function getStats()
         const stored = localStorage.getItem(STAT_HISTORY);
         if(stored !== null)
         {
-            cache = JSON.parse(stored);
+            cache = JSON.parse(stored).map(x => Stat.fromPlain(x));
         }
         else
         {

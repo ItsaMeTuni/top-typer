@@ -1,4 +1,5 @@
 import clone from 'clone';
+import { saveStat, Stat } from './statManager';
 
 export class Word
 {
@@ -15,6 +16,17 @@ export class Word
     {
         this.text = text;
         this.typos = [];
+    }
+
+    static fromPlain(plain: any): Word
+    {
+        plain.__proto__ =  Word.prototype;
+        return plain;
+    }
+
+    toPlain(): any
+    {
+        return Object.assign({}, clone(this));
     }
 }
 
@@ -45,6 +57,9 @@ export class Typewriter
     
     private wordIntervalDelays: number[] = [];
 
+    private onEndListeners: (() => void)[] = [];
+    private onRender: (() => void)[] = [];
+
     getWords() { return clone(this.words); }
     getCharIndex() { return this.currCharIndex; }
     getWordIndex() { return this.currWordIndex; }
@@ -57,15 +72,40 @@ export class Typewriter
 
     constructor(text: string)
     {
-        const words = text.split(' ');
-        for(const str of words)
+        this.reset(text);
+    }
+
+    makeWordsFromText(text: string): Word[]
+    {
+        const words: Word[] = [];
+        const wordsStr = text.split(' ');
+        for(const str of wordsStr)
         {
-            this.words.push(new Word(str));
-            this.words.push(new Word(' '));
+            words.push(new Word(str));
+            words.push(new Word(' '));
         }
 
         // Remove trailing space
-        this.words.pop();
+        words.pop();
+
+        return words;
+    }
+
+    reset(text: string)
+    {
+        this.words = this.makeWordsFromText(text);
+        this.currWordIndex = 0;
+        this.currCharIndex = 0;
+        this.wordIntervalTimestamp = 0;
+        this.charTimestamp = 0;
+        this.started = false;
+        this.ended = false;
+        this.keystrokeCount = 0;
+        this.charTypos = new Map();
+        this.charDurations = new Map();
+        this.wordIntervalDelays = [];
+
+        this.triggerRender();
     }
 
     write(char: string)
@@ -131,7 +171,9 @@ export class Typewriter
             this.registerWordInterval();
         }
 
-        this.charTimestamp = Date.now();        
+        this.charTimestamp = Date.now();   
+        
+        this.triggerRender();
     }
 
     undo()
@@ -158,6 +200,8 @@ export class Typewriter
         }
 
         this.charTimestamp = Date.now();
+
+        this.triggerRender();
     }
 
     private start()
@@ -170,6 +214,10 @@ export class Typewriter
     private end()
     {
         this.ended = true;
+
+        this.onEndListeners.forEach(x => x());
+
+        saveStat(Stat.fromTypewriter(this));
     }
 
     private registerCharTypo(char: string)
@@ -189,5 +237,20 @@ export class Typewriter
     private registerWordInterval()
     {
         this.wordIntervalDelays.push((Date.now() - this.wordIntervalTimestamp) / 1000);
+    }
+
+    triggerRender()
+    {
+        this.onRender.forEach(x => x());
+    }
+
+    attachRenderListener(listener: () => void)
+    {
+        this.onRender.push(listener);
+    }
+
+    attachEndListener(listener: () => void)
+    {
+        this.onEndListeners.push(listener);
     }
 }

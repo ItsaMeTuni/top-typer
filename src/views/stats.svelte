@@ -1,16 +1,20 @@
 <script lang="typescript">
 import Graph from "../components/graph.svelte";
 import Layout from "../layout.svelte";
+import { getStats } from "../statManager";
 import {Dataset} from '../types/dataset';
 
-/*const stats = getStats();
-const wpmHistory = stats.map(x => calcWpm(x.words));
-const accuracyHistory = stats.map(x => calcAccuracy(x.words));
+const stats = getStats().map(x => x.calculateStats());
+const wpmHistory = stats.map(x => x.wpm);
+const accuracyHistory = stats.map(x => x.keystrokeAccuracy);
+const keystrokeRhythm = stats.map(x => x.keystrokeRhythm);
 
 const datasets = [
-    new Dataset(wpmHistory, '#27D239', 40, 120),
-    new Dataset(accuracyHistory, '#6892FF', .5, 1),
-];*/
+    new Dataset(wpmHistory, '#27D239', 'auto', 'auto'),
+    new Dataset(accuracyHistory, '#6892FF', 'auto', 'auto'),
+    new Dataset(keystrokeRhythm, '#ff66c7', 'auto', 'auto'),
+];
+
 
 </script>
 
