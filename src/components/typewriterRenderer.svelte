@@ -1,18 +1,15 @@
 <script lang="typescript">
-import { onMount } from "svelte";
-
+import { onDestroy, onMount } from "svelte";
 import type { Word, Typewriter } from "../typewriter";
 
-export let typewriter: Typewriter;
-export let onNext: () => void = () => {};
-
-type FragmentType = 'normal' | 'preview' | 'error';
+type FragmentType = 'normal' | 'preview' | 'error' | 'curr-char';
 
 class Fragment
 {
     text: string = '';
     type: FragmentType = 'preview';
-    word: Word;
+    word: Word = null;
+    el: HTMLSpanElement;
 
     constructor(text: string, type: FragmentType, word: Word)
     {
@@ -22,12 +19,28 @@ class Fragment
     }
 }
 
+
+export let typewriter: Typewriter;
+export let onNext: () => void = () => {};
+
+const framerate = 60;
+const scrollSpeed = 15;
+
+let typewriterEl: HTMLDivElement;
 let fragments: Fragment[] = [];
+let tickIntervalId: number;
+let currCharFragment: Fragment;
 
 onMount(() =>
 {
     typewriter.attachRenderListener(render);
     render();
+    tickIntervalId = setInterval(tick, 1000 / framerate);
+});
+
+onDestroy(() =>
+{
+    clearInterval(tickIntervalId);
 });
 
 
@@ -47,10 +60,16 @@ function render()
             let char = word.text[charIndex];
             const isTypo = word.typos.includes(charIndex);
             const isPreview = isPreviewWord || (wordIndex === typewriter.getWordIndex() && charIndex >= typewriter.getCharIndex());
-            const fragmentType = isPreview ? 'preview' : isTypo ? 'error' : 'normal';
+            const isCurrChar = (wordIndex === typewriter.getWordIndex() && charIndex == typewriter.getCharIndex());
+
+            let fragmentType: FragmentType;
+            if(isCurrChar) fragmentType = 'curr-char';
+            else if(isPreview) fragmentType = 'preview';
+            else if(isTypo) fragmentType = 'error';
+            else fragmentType = 'normal';
 
             // Display space typos as underscores
-            if(fragmentType === 'error' && char === ' ')
+            if(isTypo && char === ' ')
             {
                 char = '_';
             }
@@ -65,6 +84,11 @@ function render()
             {
                 const fragment = new Fragment(char, fragmentType, word);
                 fragments.push(fragment);
+            }
+
+            if(isCurrChar)
+            {
+                currCharFragment = fragments[fragments.length - 1];
             }
         }
     }
@@ -88,12 +112,20 @@ function onKeydown(e: KeyboardEvent)
     }
 }
 
+function tick()
+{
+    const curr = typewriterEl.scrollTop;
+    const target = currCharFragment.el.offsetTop;
+    typewriterEl.scrollBy(0, (target - curr) * (1 / framerate) * scrollSpeed);
+}
+
 </script>
 
 <template>
     <div class="wrapper">    
         <div
             class="typewriter"
+            bind:this={typewriterEl}
             tabindex="0"
             on:keypress={onKeypress}
             on:keydown={onKeydown}
@@ -101,6 +133,7 @@ function onKeydown(e: KeyboardEvent)
             {#each fragments as fragment}
                 <span
                     class={fragment.type + ' fragment'}
+                    bind:this={fragment.el}
                 >{fragment.text}</span>
             {/each}
         </div>
@@ -150,11 +183,21 @@ function onKeydown(e: KeyboardEvent)
 
     overflow: hidden;
 
+    word-wrap: break-word;;
+
     span
     {
-        &.preview
+        white-space: pre-wrap;
+
+        &.preview, &.curr-char
         {
             opacity: .4;
+        }
+
+        &.curr-char
+        {
+            color: $color-bg;
+            background-color: white;
         }
 
         &.error
