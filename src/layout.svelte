@@ -1,14 +1,14 @@
 <script>
-import Logo from "./components/logo.svelte";
-import Nav from "./components/nav.svelte";
+import Header from "./components/header.svelte";
 
 </script>
 
 <template>
     <div class="layout">
-        <Logo></Logo>
-        <slot></slot>
-        <Nav></Nav>
+        <Header></Header>
+        <div class="content">
+            <slot></slot>
+        </div>
     </div>
 </template>
 
@@ -16,26 +16,39 @@ import Nav from "./components/nav.svelte";
 
 .layout
 {
-    padding: 48px 0;
-    display: grid;
-    grid-template-rows: 1fr auto 1fr auto;
-    justify-items: center;
+    padding-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
-    height: 100vh;
+    min-height: 100vh;
 
-    box-sizing: border-box;
-}
-
-.nav
-{
-    align-self: end;
-
-    a
+    .content
     {
-        margin: 0 24px;
-        color: inherit;
-        text-decoration: none;
-        font-size: 22px;
+        max-width: 60vw;
+
+        :global(h1, h2)
+        {
+            margin: 1em 0;
+            font-weight: 400;
+        }
+
+        :global(h1)
+        {
+            text-align: center;
+        }
+
+        :global(p)
+        {
+            opacity: .8;
+        }
+
+        :global(a)
+        {
+            color: rgb(72, 171, 252);
+            text-decoration: none;
+            font-weight: 600;
+        }
     }
 }
 

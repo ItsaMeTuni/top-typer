@@ -3,11 +3,12 @@
 import {Router, routes} from 'svelte-hash-router'
 import Type from './views/type.svelte'
 import Stats from './views/stats.svelte'
-import Tests from './views/tests.svelte'
+import About from './views/about.svelte'
 
 routes.set({
     '/': Type,
     '/stats': Stats,
+    '/about': About,
 })
 
 </script>

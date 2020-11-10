@@ -3,6 +3,7 @@ import { getStats } from "../statManager";
 import {Line} from "svelte-chartjs"
 import Header from "../components/header.svelte";
 import Checkbox from "../components/checkbox.svelte";
+import Layout from "../layout.svelte";
 
 const stats = getStats();
 const calculatedStats = stats.map(x => x.calculateStats());
@@ -134,9 +135,12 @@ const hardestKeys = Array.from(hardestKeysAveraged.entries()).sort((a, b) =>
 </script>
 
 <template>
-    <div class="layout">
-        <Header></Header>
+    <Layout>
         <h1>Your stats</h1>
+        <h2>Progress</h2>
+        <p>
+            Here is your performance progress.
+        </p>
         <div class="chart-wrapper">
             <Line data={mainChart.data} options={mainChart.options}></Line>
             <div class="checkboxes">
@@ -157,37 +161,18 @@ const hardestKeys = Array.from(hardestKeysAveraged.entries()).sort((a, b) =>
                 <span>{key}</span>
             {/each}
         </div>
-    </div>
+    </Layout>
 </template>
 
 <style lang="scss">
-
-.layout
-{
-    padding-bottom: 3rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    min-height: 100vh;
-
-    & > *:not(:first-child)
-    {
-        max-width: 60vw;
-    }
-}
-
-h1, h2
-{
-    margin: 1em 0;
-    font-weight: 400;
-}
 
 .chart-wrapper
 {
     display: flex;
     flex-direction: row;
     align-items: center;
+
+    max-width: 40vw;
 }
 
 .checkboxes
@@ -196,11 +181,6 @@ h1, h2
     margin-left: 40px;
 
     flex: 0;
-}
-
-p
-{
-    opacity: .8;
 }
 
 .hardest-keys span

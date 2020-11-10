@@ -10,14 +10,6 @@ const links = [
         path: '/#/stats',
     },
     {
-        text: 'Leaderboard',
-        path: '/#/leaderboard',
-    },
-    {
-        text: 'Options',
-        path: '/#/options',
-    },
-    {
         text: 'About and FAQ',
         path: '/#/about',
     },
