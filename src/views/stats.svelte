@@ -130,7 +130,7 @@ const hardestKeys = Array.from(hardestKeysAveraged.entries()).sort((a, b) =>
     if(a[1] === b[1]) return 0;
 })
 .map(x => x[0])
-.filter(x => x !== ' ');
+.filter(x => x !== ' ' && x !== 'Enter');
 
 </script>
 
