@@ -3,23 +3,23 @@
 const links = [
     {
         text: 'Type',
-        path: '/',
+        path: '/#/',
     },
     {
         text: 'Your stats',
-        path: '/stats',
+        path: '/#/stats',
     },
     {
         text: 'Leaderboard',
-        path: '/leaderboard',
+        path: '/#/leaderboard',
     },
     {
         text: 'Options',
-        path: '/options',
+        path: '/#/options',
     },
     {
         text: 'About and FAQ',
-        path: '/about',
+        path: '/#/about',
     },
 ].filter(x => x.path !== window.location.pathname);
 

@@ -31,6 +31,7 @@
     "npm": "^6.14.8",
     "sirv-cli": "^1.0.0",
     "svelte-chartjs": "^1.0.1",
+    "svelte-hash-router": "^1.0.1",
     "svelte-routing": "^1.4.2"
   }
 }

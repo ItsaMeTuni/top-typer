@@ -1,17 +1,18 @@
 <script lang="ts">
 
-import {Router, Route} from 'svelte-routing'
+import {Router, routes} from 'svelte-hash-router'
 import Type from './views/type.svelte'
 import Stats from './views/stats.svelte'
 import Tests from './views/tests.svelte'
 
+routes.set({
+    '/': Type,
+    '/stats': Stats,
+})
+
 </script>
 
-<Router>
-    <Route path="/" component={Type}></Route>
-    <Route path="/stats" component={Stats}></Route>
-    <Route path="/tests" component={Tests}></Route>
-</Router>
+<Router></Router>
 
 <style lang="scss">
 
