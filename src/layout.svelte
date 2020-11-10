@@ -1,5 +1,6 @@
 <script>
 import Logo from "./components/logo.svelte";
+import Nav from "./components/nav.svelte";
 
 </script>
 
@@ -7,12 +8,7 @@ import Logo from "./components/logo.svelte";
     <div class="layout">
         <Logo></Logo>
         <slot></slot>
-        <div class="nav">
-            <a href="/stats">Your stats</a>
-            <a href="/leaderboard">Leaderboard</a>
-            <a href="/options">Options</a>
-            <a href="/about">About and FAQ</a>
-        </div>
+        <Nav></Nav>
     </div>
 </template>
 

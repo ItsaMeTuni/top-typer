@@ -1,6 +1,6 @@
 <template>
     <div class="logo">
-        <div>Top Typer</div>
+        Top Typer
         <div>Type faster, much faster</div>
     </div>
 </template>
@@ -8,21 +8,23 @@
 <style lang="scss">
 .logo
 {
+    display: inline-block;
+
     font-weight: 200;
     align-self: flex-start;
 
-    div:first-child
-    {
-        font-size: 56px;
-        text-transform: uppercase;
-    }
+    font-size: 46px;
+    text-transform: uppercase;
 
-    div:last-child
+
+    div
     {
-        margin-top: 16px;
+        margin-top: 0px;
         margin-right: -15%;
-        font-size: 22px;
+        font-size: 18px;
         text-align: right;
+
+        text-transform: none;
     }
 }
 </style>

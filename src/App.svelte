@@ -3,12 +3,14 @@
 import {Router, Route} from 'svelte-routing'
 import Type from './views/type.svelte'
 import Stats from './views/stats.svelte'
+import Tests from './views/tests.svelte'
 
 </script>
 
 <Router>
     <Route path="/" component={Type}></Route>
     <Route path="/stats" component={Stats}></Route>
+    <Route path="/tests" component={Tests}></Route>
 </Router>
 
 <style lang="scss">
