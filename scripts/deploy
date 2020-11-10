@@ -1,0 +1,18 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+echo "$DIR/tmp/gh-pages"
+
+# shallow clone of gh-pages branch into ch-pages folder
+git clone --depth 1 https://github.com/ItsaMeTuni/top-typer -b gh-pages "$DIR/tmp/gh-pages"
+
+rm -rf "$DIR/tmp/gh-pages/*"
+
+(cd "$DIR/.." && npm run build)
+
+(cd "$DIR/../public/" && cp -r * "$DIR/tmp/gh-pages")
+
+(cd "$DIR/tmp/gh-pages/" && git add . && git commit -m "$(date --iso-8601=minutes)" && git push)
+
+rm -rf "$DIR/tmp/gh-pages"
