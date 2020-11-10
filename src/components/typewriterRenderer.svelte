@@ -12,11 +12,13 @@ class Fragment
 {
     text: string = '';
     type: FragmentType = 'preview';
+    word: Word;
 
-    constructor(text: string, type: FragmentType)
+    constructor(text: string, type: FragmentType, word: Word)
     {
         this.text = text;
         this.type = type;
+        this.word = word;
     }
 }
 
@@ -53,14 +55,15 @@ function render()
                 char = '_';
             }
 
+            const lastFragment = fragments[fragments.length - 1];
 
-            if(fragments.length > 0 && fragments[fragments.length - 1].type === fragmentType)
+            if(fragments.length > 0 && lastFragment.type === fragmentType && lastFragment.word === word)
             {
                 fragments[fragments.length - 1].text += char;
             }
             else
             {
-                const fragment = new Fragment(char, fragmentType);
+                const fragment = new Fragment(char, fragmentType, word);
                 fragments.push(fragment);
             }
         }
