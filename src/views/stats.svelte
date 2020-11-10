@@ -90,25 +90,71 @@ function makeChart(datasetsAndAxes: [Dataset, Axis][]): any
     }
 }
 
-let chart = makeChart([
+let mainChart = makeChart([
     makeLine('WPM', '#27D239', wpmHistory, 0, 130, true, 3),
     makeLine('Accuracy', '#6892FF', accuracyHistory, 40, 100, false, 2),
     makeLine('Pace', '#FF66C7', pace, 20, 100, false, 1),
 ]);
 
+const hardestKeysSessionCount = calculatedStats.length > 15 ? 15 : calculatedStats.length;
+
+const last5CalcStats = calculatedStats.slice(calculatedStats.length - hardestKeysSessionCount - 1); //Last 15
+
+const hardestKeysMap: Map<string, [number, number]> = new Map();
+
+for(let i = 0; i < hardestKeysSessionCount; i++)
+{
+    const calcStat = last5CalcStats[i];
+
+    for(const [key, avgDelay] of calcStat.avgTypingDelay)
+    {
+        let curr = hardestKeysMap.get(key) || [0, 0];
+        curr[0] += avgDelay;
+        curr[1] += 1;
+        hardestKeysMap.set(key, curr);
+    }
+}
+
+const hardestKeysAveraged: Map<string, number> = new Map();
+
+for(const [key, [totalDelay, delayCount]] of hardestKeysMap)
+{
+    hardestKeysAveraged.set(key, totalDelay / delayCount);
+}
+
+const hardestKeys = Array.from(hardestKeysAveraged.entries()).sort((a, b) =>
+{
+    if(a[1] > b[1]) return -1;
+    if(a[1] < b[1]) return 1;
+    if(a[1] === b[1]) return 0;
+})
+.map(x => x[0])
+.filter(x => x !== ' ');
 
 </script>
 
 <template>
     <div class="layout">
         <Header></Header>
-        <h1 class="title">Your stats</h1>
+        <h1>Your stats</h1>
         <div class="chart-wrapper">
-            <Line data={chart.data} options={chart.options}></Line>
+            <Line data={mainChart.data} options={mainChart.options}></Line>
+            <div class="checkboxes">
+                {#each mainChart.data.datasets as dataset}
+                    <Checkbox bind:checked={dataset.hidden} label={dataset.label} color={dataset.borderColor} invert={true}></Checkbox>
+                {/each}
+            </div>
         </div>
-        <div class="checkboxes">
-            {#each chart.data.datasets as dataset}
-                <Checkbox bind:checked={dataset.hidden} label={dataset.label} color={dataset.borderColor} invert={true}></Checkbox>
+        <br>
+        <h2>Character difficulty</h2>
+        <p>
+            Here is a list of characters ranked by the difficulty you seem to have when typing them, from hardest to easiest. The difficulty is measured
+            as the time you take to type each character, the harder the character is for you, the longer you will take
+            to type it.
+        </p>
+        <div class="hardest-keys">
+            {#each hardestKeys as key}
+                <span>{key}</span>
             {/each}
         </div>
     </div>
@@ -118,12 +164,20 @@ let chart = makeChart([
 
 .layout
 {
+    padding-bottom: 3rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+
+    min-height: 100vh;
+
+    & > *:not(:first-child)
+    {
+        max-width: 60vw;
+    }
 }
 
-.title
+h1, h2
 {
     margin: 1em 0;
     font-weight: 400;
@@ -131,12 +185,43 @@ let chart = makeChart([
 
 .chart-wrapper
 {
-    width: 50vw;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 
 .checkboxes
 {
-    margin-top: 32px;
+    margin-bottom: 64px;
+    margin-left: 40px;
+
+    flex: 0;
+}
+
+p
+{
+    opacity: .8;
+}
+
+.hardest-keys span
+{
+    margin: 2px;
+    padding: 4px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2ch;
+    height: 2ch;
+
+    font-family: 'Roboto Mono', monospace;
+
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+
+    box-sizing: content-box;
 }
 
 </style>
