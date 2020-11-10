@@ -1,0 +1,41 @@
+:global(.row)
+{
+    display: flex;
+    flex-direction: row;
+}
+
+:global(.column)
+{
+    display: flex;
+    flex-direction: row;
+}
+
+:global(.center)
+{
+    justify-content: center;
+}
+
+:global(.left)
+{
+    justify-content: start;
+}
+
+:global(.right)
+{
+    justify-content: end;
+}
+
+:global(.middle)
+{
+    align-items: center;
+}
+
+:global(.top)
+{
+    align-items: start;
+}
+
+:global(.bottom)
+{
+    align-items: end;
+}

@@ -1,2 +1,16 @@
 $color-bg: #2D2D2D;
 $color-text: white;
+
+@mixin link-button()
+{
+    font-size: .8em;
+
+    text-decoration: underline;
+
+    background: none;
+    border: none;
+
+    color: grey;
+
+    cursor: pointer;
+}

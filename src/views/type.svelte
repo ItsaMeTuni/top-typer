@@ -92,7 +92,7 @@ async function setup()
 
 function onSliderInput()
 {
-
+    setup();
 }
 
 function onChangePreset()
@@ -116,7 +116,10 @@ function percentageSliderFormatter(val: number): string
             <TypewriterRenderer typewriter={typewriter} onNext={setup}></TypewriterRenderer>
             <TypewriterStats typewriter={typewriter}></TypewriterStats>
         </div>
-        <Dialog visible={configsDialogVisible}>
+        <div class="settings-btn-wrapper">
+            <button on:click={() => configsDialogVisible = true}>Settings</button>
+        </div>
+        <Dialog bind:visible={configsDialogVisible}>
             <h1>Options</h1>
             <br>
             <div class="row center">
@@ -174,6 +177,8 @@ function percentageSliderFormatter(val: number): string
 
 <style lang="scss">
 
+@import '../styles/vars.scss';
+
 .layout
 {
     display: grid;
@@ -187,20 +192,19 @@ function percentageSliderFormatter(val: number): string
     justify-self: center;
 }
 
-.row
+.settings-btn-wrapper
 {
+    padding-bottom: 32px;
+
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
 
-    &.center
+    button
     {
-        justify-content: center;
+        @include link-button;
     }
-}
-
-input[type="range"]
-{
-    width: max-content;
 }
 
 </style>

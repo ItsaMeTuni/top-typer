@@ -1,4 +1,7 @@
 <script lang="typescript">
+import { createEventDispatcher } from "svelte";
+
+
 
 export let value: number = 0;
 export let min: number = 0;
@@ -9,6 +12,8 @@ export let labelFormatter: (val: number) => string = (val) => val.toString();
 
 let label: string;
 $: label = labelFormatter(value);
+
+const dispatch = createEventDispatcher();
 
 </script>
 
@@ -21,6 +26,7 @@ $: label = labelFormatter(value);
             max={max}
             step={step}
             disabled={disabled}
+            on:input={(e) => dispatch('input', e)}
         >
         <div class="value">{label}</div>
     </div>

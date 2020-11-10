@@ -17,6 +17,9 @@ function close()
     >
         <div class="dialog">
             <slot></slot>
+            <div class="row center">
+                <button on:click={close}>Close</button>
+            </div>
         </div>
     </div>
 </template>
@@ -67,6 +70,13 @@ function close()
     {
         font-weight: 400;
     }
+}
+
+button
+{
+    margin: 32px 0 16px 0;
+
+    @include link-button;
 }
 
 </style>
