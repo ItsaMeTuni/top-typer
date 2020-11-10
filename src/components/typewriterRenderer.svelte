@@ -194,12 +194,6 @@ function tick()
             opacity: .4;
         }
 
-        &.curr-char
-        {
-            color: $color-bg;
-            background-color: white;
-        }
-
         &.error
         {
             color: #C24646;
@@ -209,7 +203,13 @@ function tick()
     &:focus
     {
         outline: none;
-    }
+
+        span.curr-char
+        {
+            color: $color-bg;
+            background-color: white;
+        }
+    }    
 }
 
 
