@@ -1,4 +1,5 @@
 <script lang="typescript">
+import { createEventDispatcher } from "svelte";
 
 interface Option
 {
@@ -10,21 +11,22 @@ export let options: Option[] = [];
 export let selected: Option | null = null;
 
 let visible = false;
-
-
 let title: string;
 $: title = selected ? selected.text : 'Select a value';
+
+const dispatch = createEventDispatcher();
 
 let btnDiv: HTMLDivElement;
 
 function select(option: Option)
 {
     selected = option;
+    dispatch('change', selected);
 }
 
 document.addEventListener('click', (e: MouseEvent) =>
 {
-    visible = e.target === btnDiv;
+    visible = e.target === btnDiv && !visible;
 });
 
 </script>
@@ -108,6 +110,8 @@ document.addEventListener('click', (e: MouseEvent) =>
 
     display: none;
 
+    z-index: 10;
+
     .open &
     {
         display: block;
@@ -122,7 +126,8 @@ document.addEventListener('click', (e: MouseEvent) =>
         border-bottom: 1px solid rgba(0, 0, 0, 0.6);
         border-left: 1px solid rgba(0, 0, 0, 0.6);
         border-right: 1px solid rgba(0, 0, 0, 0.6);
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgb(66, 66, 66);
+
     }
 }
 

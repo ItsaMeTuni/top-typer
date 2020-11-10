@@ -6,7 +6,7 @@ interface WordsSet
     short: string[];
 }
 
-interface WordSizeRatios
+export interface WordSizeRatios
 {
     long: number;
     medium: number;
