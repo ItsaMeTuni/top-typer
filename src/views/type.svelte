@@ -74,7 +74,7 @@ const presets: Preset[] = [
     },
 ];
 
-let selectedPreset: Preset = presets[2];
+let selectedPreset: Preset = presets[1];
 
 let isCustomPreset: boolean;
 $: isCustomPreset = selectedPreset === presets[0];

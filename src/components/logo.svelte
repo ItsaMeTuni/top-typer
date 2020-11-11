@@ -1,8 +1,8 @@
 <template>
-    <div class="logo">
+    <a href="#/" class="logo">
         Top Typer
         <div>Type faster, much faster</div>
-    </div>
+    </a>
 </template>
 
 <style lang="scss">
@@ -16,6 +16,8 @@
     font-size: 46px;
     text-transform: uppercase;
 
+    color: inherit;
+    text-decoration: none;
 
     div
     {
