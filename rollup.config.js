@@ -5,8 +5,36 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
+import fs from 'fs';
+import path from 'path';
 
 const production = !process.env.ROLLUP_WATCH;
+
+if(production)
+{
+	const publicFolder = path.resolve(__dirname, 'public/build');
+	deleteDirRecursive(publicFolder);
+}
+
+
+function deleteDirRecursive(dirPath)
+{
+	const foldersAndFiles = fs.readdirSync(dirPath);
+	for(const currPathStr of foldersAndFiles)
+	{
+		const currPath = path.resolve(dirPath, currPathStr);
+		if(fs.lstatSync(currPath).isDirectory())
+		{
+			deleteDirRecursive(currPath)
+		}
+		else
+		{
+			fs.unlinkSync(path.resolve(dirPath, currPath));
+		}
+	}
+
+	fs.rmdirSync(dirPath);
+}
 
 function serve() {
 	let server;
@@ -32,7 +60,7 @@ function serve() {
 export default {
 	input: 'src/main.ts',
 	output: {
-		sourcemap: true,
+		sourcemap: !production,
 		format: 'iife',
 		name: 'app',
 		file: 'public/build/bundle.js'
@@ -44,9 +72,13 @@ export default {
 			// we'll extract any component CSS out into
 			// a separate file - better for performance
 			css: css => {
-				css.write('bundle.css');
+				css.write('bundle.css', !production);
 			},
-			preprocess: sveltePreprocess(),
+			preprocess: sveltePreprocess({
+				scss: {
+					sourceMap: !production
+				},
+			}),
 		}),
 
 		// If you have external dependencies installed from
